@@ -41,7 +41,7 @@ resource "scaleway_server" "server" {
   provisioner "remote-exec" {
     inline = [
       "echo ${var.server_count} > /tmp/consul-server-count",
-      "echo ${scaleway_server.server.0.ipv4_address_private} > /tmp/consul-server-addr",
+      "echo ${scaleway_server.server.0.private_ip} > /tmp/consul-server-addr",
     ]
   }
 
@@ -80,9 +80,9 @@ $ terraform apply
 This will take some minutes. Once done, verify that our cluster consists of two servers:
 
 ```
-$ terraform show | grep ipv4_address_public
-  ipv4_address_public = 212.47.227.250
-  ipv4_address_public = 163.172.160.218
+$ terraform show | grep public_ip
+  public_ip = 212.47.227.250
+  public_ip = 163.172.160.218
 $ ssh root@212.47.227.250 'consul members -rpc-addr=10.1.40.120:8400'
 Node      Address           Status  Type    Build  Protocol  DC
 consul-1  10.1.40.120:8301  alive   server  0.6.4  2         dc1
@@ -128,7 +128,7 @@ resource "scaleway_server" "server" {
 
   provisioner "remote-exec" {
     inline = [
-      "echo ${scaleway_server.server.0.ipv4_address_private} > /tmp/nomad-server-addr"
+      "echo ${scaleway_server.server.0.private_ip} > /tmp/nomad-server-addr"
     ]
   }
 
@@ -137,14 +137,14 @@ resource "scaleway_server" "server" {
 cat > /tmp/server.hcl <<EOF
 datacenter = "dc1"
 
-bind_addr = "${self.ipv4_address_private}"
+bind_addr = "${self.private_ip}"
 
 advertise {
   # We need to specify our host's IP because we can't
   # advertise 0.0.0.0 to other nodes in our cluster.
-  serf = "${self.ipv4_address_private}:4648"
-  rpc = "${self.ipv4_address_private}:4647"
-  http= "${self.ipv4_address_private}:4646"
+  serf = "${self.private_ip}:4648"
+  rpc = "${self.private_ip}:4647"
+  http= "${self.private_ip}:4646"
 }
 
 # connect to consul for cluster management

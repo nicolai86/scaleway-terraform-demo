@@ -1,3 +1,3 @@
 output "public_ips" {
-  value = "${join(",", scaleway_server.server.*.ipv4_address_public)}"
+  value = "${join(",", scaleway_server.server.*.public_ip)}"
 }

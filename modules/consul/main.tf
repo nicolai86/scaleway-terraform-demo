@@ -19,7 +19,7 @@ resource "scaleway_server" "server" {
   provisioner "remote-exec" {
     inline = [
       "echo ${var.server_count} > /tmp/consul-server-count",
-      "echo ${scaleway_server.server.0.ipv4_address_private} > /tmp/consul-server-addr",
+      "echo ${scaleway_server.server.0.private_ip} > /tmp/consul-server-addr",
     ]
   }
 

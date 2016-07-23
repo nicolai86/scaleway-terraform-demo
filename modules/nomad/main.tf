@@ -25,14 +25,14 @@ resource "scaleway_server" "server" {
 cat > /tmp/server.hcl <<EOF
 datacenter = "dc1"
 
-bind_addr = "${self.ipv4_address_private}"
+bind_addr = "${self.private_ip}"
 
 advertise {
   # We need to specify our host's IP because we can't
   # advertise 0.0.0.0 to other nodes in our cluster.
-  serf = "${self.ipv4_address_private}:4648"
-  rpc = "${self.ipv4_address_private}:4647"
-  http= "${self.ipv4_address_private}:4646"
+  serf = "${self.private_ip}:4648"
+  rpc = "${self.private_ip}:4647"
+  http= "${self.private_ip}:4646"
 }
 
 server {
