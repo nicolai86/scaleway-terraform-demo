@@ -8,11 +8,11 @@ resource "scaleway_server" "server" {
   tags = ["consul"]
 
   # provisioner "file" {
-  #   source      = "${path.module}/scripts/debian_upstart.conf"
+  #   source      = "${path.module}/scripts/upstart.conf"
   #   destination = "/tmp/upstart.conf"
   # }
   provisioner "file" {
-    source      = "${path.module}/scripts/rhel_system.service"
+    source      = "${path.module}/scripts/system.service"
     destination = "/tmp/consul.service"
   }
 
