@@ -16,3 +16,7 @@ variable "type" {
 variable "consul_cluster_ip" {
   description = "ip to consul cluster. Port is assumed to be 8500"
 }
+
+variable "security_group" {
+  description = "Security Group to place servers in"
+}

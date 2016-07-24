@@ -12,3 +12,7 @@ variable "type" {
   default     = "C1"
   description = "Scaleway Instance type, if you change, make sure it is compatible with AMI, not all AMIs allow all instance types "
 }
+
+variable "security_group" {
+  description = "Security Group to place servers in"
+}

@@ -30,10 +30,5 @@ resource "scaleway_server" "server" {
     ]
   }
 
-  security_group = "${scaleway_security_group.consul.id}"
-}
-
-resource "scaleway_security_group" "consul" {
-  name = "consul"
-  description = "consul-sg"
+  security_group = "${var.security_group}"
 }

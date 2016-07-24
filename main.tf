@@ -1,12 +1,19 @@
 provider "scaleway" {}
 
+module "security_group" {
+  source = "./modules/security_group"
+}
+
 module "consul" {
   source = "./modules/consul"
+
+  security_group = "${module.security_group.id}"
 }
 
 module "nomad" {
   source            = "./modules/nomad"
   consul_cluster_ip = "${module.consul.server_ip}"
+  security_group    = "${module.security_group.id}"
 }
 
 provider "aws" {

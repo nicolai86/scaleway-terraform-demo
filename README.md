@@ -14,6 +14,83 @@ Before we get going I want to emphasis that [nomad](https://github.com/hashicorp
 
 If you like diving into code: the entire example is available on [github](https://github.com/nicolai86/scaleway-terraform-demo).
 
+## Requirements
+
+I'm assuming you have terraform 0.7.0 or newer, installed locally. Also you need to have a Scaleway account :)
+
+To be able to use terraform export your access token and organization to your env, like this:
+
+```
+export SCALEWAY_ACCESS_KEY=<some-key> 
+export SCALEWAY_ORGANIZATION=<some-org>
+```
+
+this will allow you to run terraform without specifying any credentials.
+
+## Preparations 
+
+Scaleway, by default, exposes your instances nearly unfiltered to the world. 
+Since we provision the instances with terraform using `remote-exec` we need to be 
+able to SSH into them.
+
+To simplify the process I've decided to assign public ips at launch. Ideally you
+should use a jump host for this.
+
+To make the setup at least not accessible from the outside I've configured 
+a security group which locks down our entire cluster.
+
+Please note that security groups on Scaleway should always be created before starting 
+any instances, since changes are not applied instantanious like e.g. on AWS. 
+Sadly the security groups don't work by membership but rather by IP, so I've choosen
+a rather big CIDR for internal traffic: `10.1.0.0/16`. 
+
+Also note that they work just like iptables, so your rules are order dependent.
+You can achieve ordering using explicit `depends_on` in terraform.
+
+That being said, let's configure a security group for our entire cluster:
+
+- consul needs ports `8300, 8301, 8302, 8400, 8500, 8600` internally,
+- nomad needs ports `4646, 4647, 4648` internally.
+
+we'll allow data center internal traffic, and drop traffic on the same port: 
+
+```
+# modules/security_group/main.tf
+resource "scaleway_security_group" "cluster" {
+  name        = "cluster"
+  description = "cluster-sg"
+}
+
+resource "scaleway_security_group_rule" "accept-consul-internal" {
+  security_group = "${scaleway_security_group.cluster.id}"
+
+  action    = "accept"
+  direction = "inbound"
+
+  # NOTE this is just a guess - might not work for you.
+  ip_range = "10.1.0.0/16"
+  protocol = "TCP"
+  port     = "${element(concat(var.consul_ports, var.nomad_ports), count.index)}"
+  count    = "${length(concat(var.consul_ports, var.nomad_ports))}"
+}
+
+resource "scaleway_security_group_rule" "drop-consul-external" {
+  security_group = "${scaleway_security_group.cluster.id}"
+
+  action    = "drop"
+  direction = "inbound"
+  ip_range  = "0.0.0.0/0"
+  protocol  = "TCP"
+
+  port  = "${element(concat(var.consul_ports, var.nomad_ports), count.index)}"
+  count = "${length(concat(var.consul_ports, var.nomad_ports))}"
+
+  depends_on = ["scaleway_security_group_rule.accept-consul-internal"]
+}
+```
+
+Now that our network is at least basically secured, let's start setting up our cluster!
+
 ## Setting up consul
 
 We'll take the [official consul terraform AWS module](https://github.com/hashicorp/consul/tree/master/terraform/) and adjust it for our needs:
@@ -65,8 +142,14 @@ Now, lets use our new consul module:
 
 provider "scaleway" {}
 
+module "security_group" {
+  source = "./modules/security_group"
+}
+
 module "consul" {
   source = "./modules/consul"
+
+  security_group = "${module.security_group.id}"
 }
 ```
 
@@ -185,16 +268,24 @@ Again we've extract this into a module to bundle both the binary and the require
 Our main terraform file hides the entire setup complexity for us:
 
 ```
+# main.tf
 provider "scaleway" {}
+
+module "security_group" {
+  source = "./modules/security_group"
+}
 
 module "consul" {
   source = "./modules/consul"
+
+  security_group = "${module.security_group.id}"
 }
 
 module "nomad" {
   source = "./modules/nomad"
 
   consul_cluster_ip = "${module.consul.server_ip}"
+  security_group    = "${module.security_group.id}"
 }
 ```
 
@@ -227,7 +318,7 @@ nomad-2.global  10.1.38.33  4648  alive   true    2         0.4.0  dc1         g
 Verify that nomad registered with our consul cluster.
 
 ```
-$ curl 163.172.157.49:8500/v1/catalog/services | jq 'keys'
+$ ssh root@163.172.157.49 'curl -s 163.172.157.49:8500/v1/catalog/services' | jq 'keys'
 [
   'consul',
   'nomad',
@@ -338,7 +429,7 @@ $ nomad run -address=http://163.172.171.232:4646 nomad/fabio.nomad
 Fabio should self register with consul, let's verify that:
 
 ```
-$ curl 163.172.157.49:8500/v1/catalog/services | jq 'keys'
+$ ssh root@163.172.157.49 'curl -s 163.172.157.49:8500/v1/catalog/services' | jq 'keys'
 [
   'consul',
   'nomad',
@@ -384,7 +475,7 @@ $ nomad run -address=http://163.172.171.232:4646 -verbose nomad/isgooutyet.nomad
 We can verify that our app is actually healthy by checking the consul health checks:
 
 ```
-$ curl 163.172.157.49:8500/v1/health/checks/isgo17outyet | jq
+$ ssh root@163.172.157.49 'curl 163.172.157.49:8500/v1/health/checks/isgo17outyet' | jq
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   298  100   298    0     0   2967      0 --:--:-- --:--:-- --:--:--  2980
