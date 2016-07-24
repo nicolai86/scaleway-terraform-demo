@@ -210,12 +210,6 @@ resource "scaleway_server" "server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "echo ${scaleway_server.server.0.private_ip} > /tmp/nomad-server-addr"
-    ]
-  }
-
-  provisioner "remote-exec" {
     inline = <<CMD
 cat > /tmp/server.hcl <<EOF
 datacenter = "dc1"
