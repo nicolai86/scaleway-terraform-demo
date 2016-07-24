@@ -300,15 +300,6 @@ nomad-1.global  10.1.36.94  4648  alive   false   2         0.4.0  dc1         g
 nomad-2.global  10.1.38.33  4648  alive   true    2         0.4.0  dc1         global
 ```
 
-Assuming you have nomad install locally you can also query the state remotely using the public IP:
-
-```
-$ nomad server-members -address=http://163.172.160.218:4646
-Name            Address     Port  Status  Leader  Protocol  Build  Datacenter  Region
-nomad-1.global  10.1.36.94  4648  alive   false   2         0.4.0  dc1         global
-nomad-2.global  10.1.38.33  4648  alive   true    2         0.4.0  dc1         global
-```
-
 Verify that nomad registered with our consul cluster.
 
 ```
