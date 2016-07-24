@@ -60,4 +60,11 @@ CMD
       "${path.module}/scripts/service.sh",
     ]
   }
+
+  security_group = "${scaleway_security_group.nomad.id}"
+}
+
+resource "scaleway_security_group" "nomad" {
+  name = "nomad"
+  description = "nomad-sg"
 }

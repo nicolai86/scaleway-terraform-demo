@@ -29,4 +29,11 @@ resource "scaleway_server" "server" {
       "${path.module}/scripts/service.sh",
     ]
   }
+
+  security_group = "${scaleway_security_group.consul.id}"
+}
+
+resource "scaleway_security_group" "consul" {
+  name = "consul"
+  description = "consul-sg"
 }
