@@ -1,16 +1,18 @@
-# scaleway introduction /w terraform
+# Terraform on Scaleway
 
-terraform is a cloud provider agnostic infrastructure automation tool which, as of v0.7.0, gained support for [Scaleway](https://scaleway.com).
+Terraform is a cloud agnostic automation tool to safely and efficiently manage infrastructure as the configuration is evolved.
+In its latest version, Terraform ships [Scaleway](https://scaleway.com) support. Terraform is a great tool and combination with Scaleway to version and continuously develop your infratructure with ease.
 
-In this blog post I'll showcase terraforms new capabilities. Specifically, I'll setup a sample web API, which checks if go 1.7 is out yet.
-This will be the setup: 
+In this blog post I showcase Terraform new capabilities.  
 
-- a consul cluster 
-- a nomad cluster
-- fabio loadbalancer
-- Scaleway <-> AWS bridge
+Specifically I'll setup:
 
-Before we get going I want to emphasis that [nomad](https://github.com/hashicorp/nomad) does not (yet) officially support ARM.  
+- a Consul cluster. [Consul](https://consul.io) was build for service discovery, orchestration & configuration. To be able to dynamically change running services, consul will be used to provide health checks and service discovery for the Nomad cluster. 
+- a Nomad cluster. [Nomad](https://nomadproject.io) is a distributed scheduler which allows us to run arbitrary tasks on a nomad cluster. To achieve higher utilization and ease overall
+development nomad helps abstract instances, instead exposing a declarative syntax to specify what
+services you want to run. Nomad will ensure that the services are always running and also take care of dynamic re-allocation if instances are unavailable.
+- fabio loadbalancer. [fabio](https://github.com/eBay/fabio) was build to support a dynamic service landscape, where instances & services might fail unexpectedly. The native consul integration allows for zero configuration usage, relying on consuls data for configuration and service discovery. Fabio allows us to expose a web api, while not worrying about service relocation in case of instance failures.
+- AWS Route 53. To be able to access our service via a publicly accessible DNS entry, I will bridge with AWS Route 53. AWS Route 53 is a mature DNS service, which together with fabio, consul and nomad will allow us to deploy software with certainty of availability.
 
 If you like diving into code: the entire example is available on [github](https://github.com/nicolai86/scaleway-terraform-demo).
 
