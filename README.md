@@ -18,16 +18,16 @@ If you like diving into code: the entire example is available on [github](https:
 
 ## Requirements
 
-I'm assuming you have at least terraform v0.7.0 installed. Also you need to have a Scaleway account :)
+I assume that you have terraform >= v0.7.0 installed and are already a Scaleway user. If not, you can create your account in seconds [here](scaleway.com/pricing).
 
-To be able to use terraform export your access token and organization to your env, like this:
+First, set the following environmental variables to allow Terraform to interact with the Scaleway APIs:
 
 ```
 export SCALEWAY_ACCESS_KEY=<some-key> 
 export SCALEWAY_ORGANIZATION=<some-org>
 ```
 
-this will allow you to run terraform without specifying any credentials:
+Exporting environmental variables lets you run Terraform without specifying any credentials in the Terraform configuration file:
 
 ```
 # main.tf
