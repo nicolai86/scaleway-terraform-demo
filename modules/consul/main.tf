@@ -1,3 +1,27 @@
+variable "server_count" {
+  default     = "2"
+  description = "The number of Consul servers to launch."
+}
+
+variable "image" {
+  default     = "eeb73cbf-78a9-4481-9e38-9aaadaf8e0c9"
+  description = "Ubuntu 16.04 ARM; if you change the instance type be sure to adjust this."
+}
+
+variable "type" {
+  default     = "C1"
+  description = "Scaleway Instance type, if you change, make sure it is compatible with AMI, not all AMIs allow all instance types "
+}
+
+variable "security_group" {
+  description = "Security Group to place servers in"
+}
+
+variable "bastion_host" {
+  description = "IP of bastion host used for provisioning"
+}
+
+
 resource "scaleway_server" "server" {
   count               = "${var.server_count}"
   name                = "consul-${count.index + 1}"
@@ -7,7 +31,11 @@ resource "scaleway_server" "server" {
   tags = ["consul"]
 
   connection {
-    bastion_host = "${bastion_host}"
+    type = "ssh"
+    user = "root"
+    host = "${self.private_ip}"
+    bastion_host = "${var.bastion_host}"
+    bastion_user = "root"
     agent = true
   }
 
@@ -35,4 +63,8 @@ resource "scaleway_server" "server" {
   }
 
   security_group = "${var.security_group}"
+}
+
+output "server_ip" {
+  value = "${scaleway_server.server.0.private_ip}"
 }

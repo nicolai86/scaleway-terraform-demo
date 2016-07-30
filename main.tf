@@ -1,3 +1,7 @@
+variable "aws_hosted_zone_id" {
+  default = ""
+}
+
 provider "scaleway" {}
 
 module "security_group" {

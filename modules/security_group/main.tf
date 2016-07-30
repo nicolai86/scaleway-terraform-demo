@@ -1,3 +1,11 @@
+variable "nomad_ports" {
+  # http 4646
+  # rpc 4647
+  # serf 4648
+  default = [4646, 4647, 4648]
+}
+
+
 # security group rules seem to work like iptables: the order of
 # accept and drop is important. also, the security groups should be created
 # before you start spawning any servers
@@ -7,7 +15,7 @@ resource "scaleway_security_group" "cluster" {
 }
 
 # allow datacenter internal traffic to consul:
-resource "scaleway_security_group_rule" "accept-consul-internal" {
+resource "scaleway_security_group_rule" "accept-internal" {
   security_group = "${scaleway_security_group.cluster.id}"
 
   action    = "accept"
@@ -21,7 +29,7 @@ resource "scaleway_security_group_rule" "accept-consul-internal" {
 }
 
 # disable datacenter external traffic to consul
-resource "scaleway_security_group_rule" "drop-consul-external" {
+resource "scaleway_security_group_rule" "drop-external" {
   security_group = "${scaleway_security_group.cluster.id}"
 
   action    = "drop"
@@ -32,5 +40,9 @@ resource "scaleway_security_group_rule" "drop-consul-external" {
   port  = "${element(var.nomad_ports, count.index)}"
   count = "${length(var.nomad_ports)}"
 
-  depends_on = ["scaleway_security_group_rule.accept-consul-internal"]
+  depends_on = ["scaleway_security_group_rule.accept-internal"]
+}
+
+output "id" {
+  value = "${scaleway_security_group.cluster.id}"
 }

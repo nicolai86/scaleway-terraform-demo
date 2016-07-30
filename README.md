@@ -38,11 +38,10 @@ provider "scaleway" {}
 ## Preparations 
 
 I use a jump host, so my consul cluster instances are not publicly accessible and 
-setup a security group to lock external requests to my Nomad cluster requests out:
+setup a security group to lock external requests to my Nomad cluster requests out.
+Nomad uses ports `4646`, `4647` and `4648` for http, rpc and serf.
 
-- nomad needs ports `4646, 4647, 4648`.
-
-we'll allow data center internal traffic, and drop outside traffic on the same port: 
+I'll allow data center internal traffic, and drop outside traffic on the same port: 
 
 ```
 # modules/security_group/main.tf
