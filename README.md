@@ -50,7 +50,7 @@ resource "scaleway_security_group" "cluster" {
   description = "cluster-sg"
 }
 
-resource "scaleway_security_group_rule" "accept-consul-internal" {
+resource "scaleway_security_group_rule" "accept-internal" {
   security_group = "${scaleway_security_group.cluster.id}"
 
   action    = "accept"
@@ -63,7 +63,7 @@ resource "scaleway_security_group_rule" "accept-consul-internal" {
   count    = "${length(var.nomad_ports)}"
 }
 
-resource "scaleway_security_group_rule" "drop-consul-external" {
+resource "scaleway_security_group_rule" "drop-external" {
   security_group = "${scaleway_security_group.cluster.id}"
 
   action    = "drop"
@@ -74,7 +74,7 @@ resource "scaleway_security_group_rule" "drop-consul-external" {
   port  = "${element(var.nomad_ports, count.index)}"
   count = "${length(var.nomad_ports)}"
 
-  depends_on = ["scaleway_security_group_rule.accept-consul-internal"]
+  depends_on = ["scaleway_security_group_rule.accept-internal"]
 }
 ```
 
@@ -102,6 +102,10 @@ output "public_ip" {
 }
 ```
 
+As you can see I'm using the `scaleway_ip` resource to request a public IP which can 
+outlive the instance it's attached to. This way you can re-create the jump host without
+loosing the IP you're using.
+
 We'll be using our jump host module like this: 
 
 ```
@@ -119,7 +123,7 @@ module "jump_host" {
 }
 ```
 
-Finally, let's setup our clusters:
+Next, let's setup our consul clusters:
 
 ## Setting up consul
 
