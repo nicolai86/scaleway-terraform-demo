@@ -82,6 +82,41 @@ Now that our network is no longer publicly accessible, let's start setting up a 
 
 ```
 # modules/jump_host/main.tf
+resource "scaleway_server" "jump_host" {
+  name                = "jump_host"
+  image               = "${var.image}"
+  type                = "${var.type}"
+  dynamic_ip_required = true
+
+  tags = ["jump_host"]
+
+  security_group = "${var.security_group}"
+}
+
+resource "scaleway_ip" "jump_host" {
+  server = "${scaleway_server.jump_host.id}"
+}
+
+output "public_ip" {
+  value = "${scaleway_ip.jump_host.ip}"
+}
+```
+
+We'll be using our jump host module like this: 
+
+```
+# main.tf
+provider "scaleway" {}
+
+module "security_group" {
+  source = "./modules/security_group"
+}
+
+module "jump_host" {
+  source = "./modules/jump_host"
+
+  security_group = "${module.security_group.id}"
+}
 ```
 
 Finally, let's setup our clusters:
@@ -103,6 +138,15 @@ resource "scaleway_server" "server" {
   dynamic_ip_required = true
 
   tags = ["consul"]
+
+  connection {
+    type         = "ssh"
+    user         = "root"
+    host         = "${self.private_ip}"
+    bastion_host = "${var.bastion_host}"
+    bastion_user = "root"
+    agent        = true
+  }
 
   provisioner "file" {
     source      = "${path.module}/scripts/rhel_system.service"
@@ -128,6 +172,9 @@ resource "scaleway_server" "server" {
 Since we'll be using terraform with `remote-exec` we have to request a public IP via `dynamic_ip_required = true`.
 To accomodate the bundled installation scripts we'll packaged the entire setup into one terraform module called `consul`.  
 
+Also note the use of the `connection` attribute to instruct terraform to use our jump host to
+connect to any consul instance.
+
 Now, lets use our new consul module:
 
 ```
@@ -138,10 +185,17 @@ module "security_group" {
   source = "./modules/security_group"
 }
 
+module "jump_host" {
+  source = "./modules/jump_host"
+
+  security_group = "${module.security_group.id}"
+}
+
 module "consul" {
   source = "./modules/consul"
 
   security_group = "${module.security_group.id}"
+  bastion_host   = "${module.jump_host.public_ip}"
 }
 ```
 
