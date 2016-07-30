@@ -21,22 +21,21 @@ variable "bastion_host" {
   description = "IP of bastion host used for provisioning"
 }
 
-
 resource "scaleway_server" "server" {
-  count               = "${var.server_count}"
-  name                = "consul-${count.index + 1}"
-  image               = "${var.image}"
-  type                = "${var.type}"
+  count = "${var.server_count}"
+  name  = "consul-${count.index + 1}"
+  image = "${var.image}"
+  type  = "${var.type}"
 
   tags = ["consul"]
 
   connection {
-    type = "ssh"
-    user = "root"
-    host = "${self.private_ip}"
+    type         = "ssh"
+    user         = "root"
+    host         = "${self.private_ip}"
     bastion_host = "${var.bastion_host}"
     bastion_user = "root"
-    agent = true
+    agent        = true
   }
 
   # provisioner "file" {

@@ -18,7 +18,7 @@ module "consul" {
   source = "./modules/consul"
 
   security_group = "${module.security_group.id}"
-  bastion_host = "${module.jump_host.public_ip}"
+  bastion_host   = "${module.jump_host.public_ip}"
 }
 
 module "nomad" {

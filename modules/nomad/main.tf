@@ -21,7 +21,6 @@ variable "security_group" {
   description = "Security Group to place servers in"
 }
 
-
 resource "scaleway_server" "server" {
   count               = "${var.server_count}"
   name                = "nomad-${count.index + 1}"

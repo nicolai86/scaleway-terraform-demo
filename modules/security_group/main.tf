@@ -5,7 +5,6 @@ variable "nomad_ports" {
   default = [4646, 4647, 4648]
 }
 
-
 # security group rules seem to work like iptables: the order of
 # accept and drop is important. also, the security groups should be created
 # before you start spawning any servers
