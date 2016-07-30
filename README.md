@@ -206,13 +206,21 @@ $ terraform get       # tell terraform to lookup referenced consul module
 $ terraform apply
 ```
 
-This will take some minutes. Once done, verify that our cluster consists of two servers:
+This will take some minutes. Once done, verify that our cluster consists of two servers.
+First, find out the public IP of our jumphost:
 
 ```
-$ terraform show | grep public_ip
-  public_ip = 212.47.227.250
-  public_ip = 163.172.160.218
-$ ssh root@212.47.227.250 'consul members -rpc-addr=10.1.40.120:8400'
+$ terraform output -module=jump_host
+  public_ip = 212.47.227.252
+```
+
+Next, let's lookup the private IPs of our consul servers, and query the member list:
+
+```
+$ terraform show | grep private_ip
+  private_ip = 10.1.40.120
+  private_ip = 10.1.17.22
+$ ssh root@212.47.227.252 'consul members -rpc-addr=10.1.40.120:8400'
 Node      Address           Status  Type    Build  Protocol  DC
 consul-1  10.1.40.120:8301  alive   server  0.6.4  2         dc1
 consul-2  10.1.17.22:8301   alive   server  0.6.4  2         dc1
@@ -349,7 +357,7 @@ nomad-2.global  10.1.38.33  4648  alive   true    2         0.4.0  dc1         g
 Also, let's verify that nomad registered with our consul cluster.
 
 ```
-$ ssh root@163.172.157.49 'curl -s 10.1.42.50:8500/v1/catalog/services' | jq 'keys'
+$ ssh root@212.47.227.252 'curl -s 10.1.42.50:8500/v1/catalog/services' | jq 'keys'
 [
   'consul',
   'nomad',
