@@ -3,9 +3,13 @@ resource "scaleway_server" "server" {
   name                = "consul-${count.index + 1}"
   image               = "${var.image}"
   type                = "${var.type}"
-  dynamic_ip_required = true
 
   tags = ["consul"]
+
+  connection {
+    bastion_host = "${bastion_host}"
+    agent = true
+  }
 
   # provisioner "file" {
   #   source      = "${path.module}/scripts/upstart.conf"

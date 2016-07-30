@@ -37,29 +37,12 @@ provider "scaleway" {}
 
 ## Preparations 
 
-Scaleway, by default, exposes your instances to the world ([the network is not isolated between different customers](https://community.online.net/t/is-the-lan-traffic-between-servers-encrypted-isolated/2579/3)).
-Since we provision the instances with terraform using `remote-exec` we need to be 
-able to SSH into them, thus requiring a publicly accessible IP.
+I use a jump host, so my consul cluster instances are not publicly accessible and 
+setup a security group to lock external requests to my Nomad cluster requests out:
 
-> anybody willing to write a packer integration? This would solve the issue for certain use cases
+- nomad needs ports `4646, 4647, 4648`.
 
-Ideally you should use a jump host, so your cluster instances are not publicly accessible.
-As a small barrier we'll setup a security group to lock external consul/ nomad requests out.
-
-Please note that security groups on Scaleway should always be created before starting 
-any instances, since changes are not applied instantaneous like e.g. on AWS. 
-Sadly the security groups don't work by membership but rather by IP, so I've choosen
-a rather big CIDR for internal traffic: `10.1.0.0/16`. 
-
-Also note that they work just like iptables, so your rules are order dependent.
-You can achieve ordering using explicit `depends_on` in terraform.
-
-That being said, let's configure a security group for our entire cluster:
-
-- consul needs ports `8300, 8301, 8302, 8400, 8500, 8600` internally,
-- nomad needs ports `4646, 4647, 4648` internally.
-
-we'll allow data center internal traffic, and drop traffic on the same port: 
+we'll allow data center internal traffic, and drop outside traffic on the same port: 
 
 ```
 # modules/security_group/main.tf
@@ -77,8 +60,8 @@ resource "scaleway_security_group_rule" "accept-consul-internal" {
   # NOTE this is just a guess - might not work for you.
   ip_range = "10.1.0.0/16"
   protocol = "TCP"
-  port     = "${element(concat(var.consul_ports, var.nomad_ports), count.index)}"
-  count    = "${length(concat(var.consul_ports, var.nomad_ports))}"
+  port     = "${element(var.nomad_ports, count.index)}"
+  count    = "${length(var.nomad_ports)}"
 }
 
 resource "scaleway_security_group_rule" "drop-consul-external" {
@@ -89,14 +72,20 @@ resource "scaleway_security_group_rule" "drop-consul-external" {
   ip_range  = "0.0.0.0/0"
   protocol  = "TCP"
 
-  port  = "${element(concat(var.consul_ports, var.nomad_ports), count.index)}"
-  count = "${length(concat(var.consul_ports, var.nomad_ports))}"
+  port  = "${element(var.nomad_ports, count.index)}"
+  count = "${length(var.nomad_ports)}"
 
   depends_on = ["scaleway_security_group_rule.accept-consul-internal"]
 }
 ```
 
-Now that our network is no longer publicly accessible, let's start setting up our cluster!
+Now that our network is no longer publicly accessible, let's start setting up a jump host:
+
+```
+# modules/jump_host/main.tf
+```
+
+Finally, let's setup our clusters:
 
 ## Setting up consul
 
