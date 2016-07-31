@@ -39,7 +39,7 @@ resource "scaleway_server" "server" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/scripts/nomad_v0.4_linux_arm"
+    source      = "${path.module}/binaries/nomad_v0.4_linux_arm"
     destination = "/usr/local/bin/nomad"
   }
 
