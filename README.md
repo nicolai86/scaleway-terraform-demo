@@ -1,3 +1,7 @@
+## TODO
+
+- adjust nomad plan & run examples now that direct access is locked down (scp files, run from jump host /w private IP)
+
 # Terraform on Scaleway
 
 Terraform is a cloud agnostic automation tool to safely and efficiently manage infrastructure as the configuration is evolved.
