@@ -16,7 +16,6 @@ Specifically I'll setup:
 development nomad helps abstract instances, instead exposing a declarative syntax to specify what
 services you want to run. Nomad will ensure that the services are always running and also take care of dynamic re-allocation if instances are unavailable.
 - fabio loadbalancer. [fabio](https://github.com/eBay/fabio) was build to support a dynamic service landscape, where instances & services might fail unexpectedly. The native consul integration allows for zero configuration usage, relying on consuls data for configuration and service discovery. Fabio allows us to expose a web api, while not worrying about service relocation in case of instance failures.
-- AWS Route 53. To be able to access our service via a publicly accessible DNS entry, I will bridge with AWS Route 53. AWS Route 53 is a mature DNS service, which together with fabio, consul and nomad will allow us to deploy software with certainty of availability.
 
 If you like diving into code: the entire example is available on [github](https://github.com/nicolai86/scaleway-terraform-demo).
 
@@ -497,8 +496,7 @@ Great! Now we need to run some applications on our fresh cluster:
 I've taken the [is go 1.2 out yet](https://github.com/nf/go12) API and adjusted it to check for go 1.7 instead of go 1.2.
 
 To allow fabio to pick up our app we need to include a service definition. I'll be 
-using one of my domains for this, `randschau.eu`, since I want to bridge this to AWS 
-Route 53 later on:
+using one of my domains for this, `randschau.eu`.
 
 ```
 service {
@@ -549,58 +547,11 @@ $ ssh root@163.172.157.49 'curl 163.172.157.49:8500/v1/health/checks/isgo17outye
 ]
 ```
 
-Now we need to route `isgo17outyet.randschau.eu` to any nomad node to be able to access it via dns. For this we'll be using AWS Route 53:
-
-## DNS routing
-
-We slightly modify our `main.tf`:
+Now we can setup DNS routing to any nomad node to be able to access our new API. For now we'll just verify it's working
+by setting appropriate request headers:
 
 ```
-provider "scaleway" {}
-
-module "security_group" {
-  source = "./modules/security_group"
-}
-
-module "consul" {
-  source = "./modules/consul"
-
-  security_group = "${module.security_group.id}"
-}
-
-module "nomad" {
-  source = "./modules/nomad"
-
-  consul_cluster_ip = "${module.consul.server_ip}"
-  security_group    = "${module.security_group.id}"
-}
-
-provider "aws" {
-  region = "eu-west-1"
-}
-
-resource "aws_route53_record" "service" {
-  zone_id = "${var.aws_hosted_zone_id}"
-  name = "isgo17outyet"
-  type = "A"
-  ttl = "30"
-  records = [
-      "${split(",", module.nomad.public_ips)}"
-  ]
-}
-```
-
-Apply the changes with terraform:
-
-```
-$ terraform apply -var 'aws_hosted_zone_id=<my-hosted-zone-id>'
-```
-
-Once this is done we should immediatly be able to access our api via our AWS Route 53 
-domain:
-
-```
-$  curl -v -H 'isgo17outyet.randschau.eu' 
+$  curl -v -H 'Host: isgo17outyet.randschau.eu' 163.172.171.232
 *   Trying 163.172.171.232...
 * Connected to 163.172.171.232 (163.172.171.232) port 9999 (#0)
 > GET / HTTP/1.1
@@ -627,11 +578,9 @@ $  curl -v -H 'isgo17outyet.randschau.eu'
 
 ## closing thoughts
 
-This was just a demo on how to use the new Scaleway provider with terraform,
-as well as how to connect it with other cloud providers like AWS.
+This was just a demo on how to use the new Scaleway provider with terraform.
 
-We've skipped over using `scaleway_ip`, e.g. to have IPs which can outlive specific servers. This would be a great option for a jump host.
-
-Also if you want to persist data separate from your server I suggest giving `scaleway_volume` & `scaleway_volume_attachment` a spin.
+We've skipped over using `scaleway_volume` & `scaleway_volume_attachment` to persist data over
+servers, and will leave this for another time.
 
 That's it for now. Happy hacking : )
