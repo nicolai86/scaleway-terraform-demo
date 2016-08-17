@@ -38,11 +38,6 @@ resource "scaleway_server" "server" {
     destination = "/tmp/nomad.service"
   }
 
-  provisioner "file" {
-    source      = "${path.module}/binaries/nomad_v0.4_linux_arm"
-    destination = "/usr/local/bin/nomad"
-  }
-
   provisioner "remote-exec" {
     inline = <<CMD
 cat > /tmp/server.hcl <<EOF

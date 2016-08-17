@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Installing Nomad..."
+echo "Installing dependencies..."
+if [ -x "$(command -v apt-get)" ]; then
+  sudo apt-get update -y
+  sudo apt-get install -y unzip
+else
+  sudo yum update -y
+  sudo yum install -y unzip wget
+fi
 
+echo "Installing Nomad..."
 sudo mkdir -p /opt/nomad/data
 sudo mkdir -p /etc/nomad.d
 sudo mv /tmp/server.hcl /etc/nomad.d
 
-chmod +x /usr/local/bin/nomad
+NOMAD=0.4.1-rc1
+cd /tmp
+curl -L -o nomad.zip https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_arm.zip
+unzip nomad.zip >/dev/null
+chmod +x nomad
+sudo mv nomad /usr/local/bin/nomad
 
 # Read from the file we created
 
