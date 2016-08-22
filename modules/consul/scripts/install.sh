@@ -14,7 +14,11 @@ fi
 echo "Fetching Consul..."
 CONSUL=0.6.4
 cd /tmp
-curl -L -o consul.zip https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_arm.zip
+machine_type=arm
+if [[ `uname -m` == "x86_64" ]]; then
+  machine_type=amd64
+fi
+curl -L -o consul.zip https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_${machine_type}.zip
 
 echo "Installing Consul..."
 unzip consul.zip >/dev/null
