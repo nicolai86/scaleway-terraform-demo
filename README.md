@@ -1,50 +1,36 @@
-## TODO
+[Terraform](https://www.terraform.io) is a cloud agnostic automation tool to safely and efficiently manage infrastructure as the configuration is evolved. In its latest version, Terraform ships [Scaleway](https://scaleway.com) support which make it a great tool to version and continuously develop your Scaleway infrastructure with ease.
 
-- adjust nomad plan & run examples now that direct access is locked down (scp files, run from jump host /w private IP)
+In this blog post I showcase Terraform new capabilities by setting up a small Web App using Consul, Nomad and Fabio.
 
-# Terraform on Scaleway
+- [Consul](https://www.consul.io/) is a tool for service discovery and configuration. Consul is distributed, highly available, and extremely scalable.
 
-Terraform is a cloud agnostic automation tool to safely and efficiently manage infrastructure as the configuration is evolved.
-In its latest version, Terraform ships [Scaleway](https://scaleway.com) support. Terraform is a great tool and combination with Scaleway to version and continuously develop your infratructure with ease.
+- [Nomad](https://www.nomadproject.io/) is a distributed scheduler which allows to run arbitrary tasks and ensure that services are always running and take care of dynamic re-allocation if instances are unavailable.
 
-In this blog post I showcase Terraform new capabilities.  
+- [Fabio](https://github.com/eBay/fabio) is a fast, modern, zero-conf load balancing HTTP router for deploying applications managed by consul.
 
-Specifically I'll setup:
+##### Requirements
 
-- a Consul cluster. [Consul](https://consul.io) was build for service discovery, orchestration & configuration. To be able to dynamically change running services, consul will be used to provide health checks and service discovery for the Nomad cluster. 
-- a Nomad cluster. [Nomad](https://nomadproject.io) is a distributed scheduler which allows us to run arbitrary tasks on a nomad cluster. To achieve higher utilization and ease overall
-development nomad helps abstract instances, instead exposing a declarative syntax to specify what
-services you want to run. Nomad will ensure that the services are always running and also take care of dynamic re-allocation if instances are unavailable.
-- fabio loadbalancer. [fabio](https://github.com/eBay/fabio) was build to support a dynamic service landscape, where instances & services might fail unexpectedly. The native consul integration allows for zero configuration usage, relying on consuls data for configuration and service discovery. Fabio allows us to expose a web api, while not worrying about service relocation in case of instance failures.
-
-If you like diving into code: the entire example is available on [github](https://github.com/nicolai86/scaleway-terraform-demo).
-
-## Requirements
-
-I assume that you have terraform >= v0.7.0 installed and are already a Scaleway user. If not, you can create your account in seconds [here](scaleway.com/pricing).
+I assume you have [Terraform](https://www.terraform.io) >= v0.7.0 installed and have a Scaleway account. If not, you can sign-up in seconds [here](https://cloud.scaleway.com/#/signup).
 
 First, set the following environmental variables to allow Terraform to interact with the Scaleway APIs:
 
 ```
-export SCALEWAY_ACCESS_KEY=<some-key> 
-export SCALEWAY_ORGANIZATION=<some-org>
+export SCALEWAY_ACCESS_KEY=<your-access-key> 
+export SCALEWAY_ORGANIZATION=<your-organization-key>
 ```
 
-Exporting environmental variables lets you run Terraform without specifying any credentials in the Terraform configuration file:
+Exporting environmental variables lets you run Terraform without specifying any credentials in the configuration file:
 
 ```
 # main.tf
 provider "scaleway" {}
-
 ```
 
-## Preparations 
+##### Preparations
 
-I use a jump host, so my consul cluster instances are not publicly accessible and 
-setup a security group to lock external requests to my Nomad cluster requests out.
-Nomad uses ports `4646`, `4647` and `4648` for http, rpc and serf.
+I use a jump host, so my Consul cluster instances are not publicly accessible and setup a security group to disable external requests to the Nomad cluster. Nomad uses ports `4646`, `4647` and `4648` for HTTP, RPC and Serf.
 
-I'll allow data center internal traffic, and drop outside traffic on the same port: 
+The following configuration create a security group that allows internal traffic and drop inbound traffic on Nomad ports:
 
 ```
 # modules/security_group/main.tf
@@ -81,7 +67,7 @@ resource "scaleway_security_group_rule" "drop-external" {
 }
 ```
 
-Now that our network is no longer publicly accessible, let's start setting up a jump host:
+Our network is no longer publicly accessible, we can start setting up the jump host:
 
 ```
 # modules/jump_host/main.tf
@@ -105,11 +91,9 @@ output "public_ip" {
 }
 ```
 
-As you can see I'm using the `scaleway_ip` resource to request a public IP which can 
-outlive the instance it's attached to. This way you can re-create the jump host without
-loosing the IP you're using.
+As you can see above, I'm using the scaleway_ip resource to request a public IP which can outlive the instance it's attached to. This way you can re-create the jump host without loosing the public IP you're using.
 
-We'll be using our jump host module like this: 
+We'll be using our jump host module like this:
 
 ```
 # main.tf
@@ -124,16 +108,14 @@ module "jump_host" {
 
   security_group = "${module.security_group.id}"
 }
+
 ```
 
-Next, let's setup our consul clusters:
+Next, let's setup our consul clusters.
 
-## Setting up consul
+##### Setting up Consul
 
-We'll take the [official consul terraform AWS module](https://github.com/hashicorp/consul/tree/master/terraform/) and adjust it for our needs:
-
-First, the core of our setup is the `scaleway_server` resource. To slightly simplify the setup we'll default to ubuntu 16.04 and `systemd`. The image & commercial server type have been moved into a separate variables file.
-Lastly, we have to modify the `install.sh` script to install the [official consul ARM binary](https://releases.hashicorp.com/consul/0.6.4/):
+First, the core of our setup is the `scaleway_server` resource. To slightly simplify the setup I use Ubuntu 16.04 and systemd. The server image & commercial type have been moved into a separate variables file. Lastly, we have to modify the install.sh script to install the official consul ARM binary:
 
 ```
 # modules/consul/main.tf
@@ -176,11 +158,9 @@ resource "scaleway_server" "server" {
 }
 ```
 
-Since we'll be using terraform with `remote-exec` we have to request a public IP via `dynamic_ip_required = true`.
-To accomodate the bundled installation scripts we'll packaged the entire setup into one terraform module called `consul`.  
+Since I use terraform with remote-exec, I have to request a public IP via `dynamic_ip_required = true`. To accommodate the bundled installation scripts, I packaged the entire setup into one terraform module called `consul`.
 
-Also note the use of the `connection` attribute to instruct terraform to use our jump host to
-connect to any consul instance.
+Note that I use the `connection` attribute to instruct terraform to use the jump host I created previously to connect to any consul instance.
 
 Now, lets use our new consul module:
 
@@ -206,22 +186,21 @@ module "consul" {
 }
 ```
 
-Now, to get a running consul cluster we have to let terraform do its job:
+To run the consul cluster, I have to run the following Terraform commands:
 
 ```
 $ terraform get       # tell terraform to lookup referenced consul module 
 $ terraform apply
 ```
 
-This will take some minutes. Once done, verify that our cluster consists of two servers.
-First, find out the public IP of our jumphost:
+This operation can take a few minutes. Once done, I verify that the cluster consists of two servers. I first have to find out the public IP of our jumphost:
 
 ```
 $ terraform output -module=jump_host
   public_ip = 212.47.227.252
 ```
 
-Next, let's lookup the private IPs of our consul servers, and query the member list:
+Next, let's lookup the private IPs of the consul servers, and query the member list:
 
 ```
 $ terraform show | grep private_ip
@@ -231,25 +210,20 @@ $ ssh root@212.47.227.252 'consul members -rpc-addr=10.1.40.120:8400'
 Node      Address           Status  Type    Build  Protocol  DC
 consul-1  10.1.40.120:8301  alive   server  0.6.4  2         dc1
 consul-2  10.1.17.22:8301   alive   server  0.6.4  2         dc1
+
 ```
 
 Note that it doesn't matter which server we talk to.
 
-> TODO describe how to lookup IMAGE uuid. Right now I'm working around the issue: create a server, describe via API, use image uuid from response. scw images --no-trunc doesn't work for ARM… :?
-
+>TODO describe how to lookup IMAGE uuid. Right now I'm working around the issue: create a server, describe via API, use image uuid from response. scw images --no-trunc doesn't work for ARM… :?
 Lets continue with setting up our nomad cluster!
 
-## Setting up nomad
+#### Setting up nomad
 
-> TODO write up how to generate nomad binary. Basically start Scaleway server, install go arm, gcc & git; go get nomad, modify `scripts/build.sh` to remove linux/arm from excluded targets; compile; download binary
+The basic Nomad setup is very similar to the consul setup. I use Ubuntu 16.04 as base image; Nomad will be supervised by systemd. The notable differences are:
 
-Nomad doesn't supply prebuild ARM binaries. Luckily we can compile a working binary on a Scaleway ARM server easily. I've included nomad v0.4.0 in this repository, and we'll be using this binary for the rest of this post.
-
-The basic nomad setup looks very similar to our consul setup: again we're using Ubuntu 16.04 as base image; nomad will be supervised by `systemd`. The notable differences are:
-
-- the nomad binary is uploaded from our local machine
-- the nomad configuration file is generated inline
-- nomad will use the existing consul cluster. this allows nomad to bootstrap itself easily
+- The nomad configuration file is generated inline
+- Nomad will use the existing consul cluster to bootstrap itself
 
 ```
 resource "scaleway_server" "server" {
@@ -318,7 +292,7 @@ CMD
 }
 ```
 
-Again we've extract this into a module to bundle both the binary and the required scripts.
+Here again, I've extract this into a module to bundle both the binary and the required scripts.
 
 Our main terraform file hides the entire setup complexity for us:
 
@@ -342,9 +316,10 @@ module "nomad" {
   consul_cluster_ip = "${module.consul.server_ip}"
   security_group    = "${module.security_group.id}"
 }
+
 ```
 
-Again, let's use terraform to get our nomad cluster up and running:
+To run the Nomad cluster, I use the following Terraform commands:
 
 ```
 $ terraform get    # tell terraform to lookup referenced consul module 
@@ -352,7 +327,7 @@ $ terraform plan   # we should see two new nomad servers
 $ terraform apply
 ```
 
-This will take some minutes again. And again, let's verify the setup was actually successful. We should see two nomad nodes, where one node is marked as leader:
+This operation can take a few minutes. Once the operation completed, I verify the setup. I should see two nomad nodes, where one node is marked as leader:
 
 ```
 $ ssh root@163.172.160.218 'nomad server-members -address=http://10.1.38.33:4646'
@@ -361,7 +336,7 @@ nomad-1.global  10.1.36.94  4648  alive   false   2         0.4.0  dc1         g
 nomad-2.global  10.1.38.33  4648  alive   true    2         0.4.0  dc1         global
 ```
 
-Also, let's verify that nomad registered with our consul cluster.
+I also verify that nomad registered with the Consul cluster:
 
 ```
 $ ssh root@212.47.227.252 'curl -s 10.1.42.50:8500/v1/catalog/services' | jq 'keys'
@@ -372,7 +347,7 @@ $ ssh root@212.47.227.252 'curl -s 10.1.42.50:8500/v1/catalog/services' | jq 'ke
 ]
 ```
 
-If you see `consul`, `nomad` and `nomad-client` in the output everything is working so far.
+The command above result looks good as I can see `consul`, `nomad` and `nomad-client` listed in the output.
 
 Before we proceed we need to verify that the ARM binary of nomad properly reports resources, otherwise we can't schedule jobs in our cluster:
 
@@ -399,9 +374,8 @@ CPU             Memory           Disk
 844805/5332000  354 MiB/2.0 GiB  749 MiB/46 GiB
 ```
 
-> this did not work with nomad v0.4.0 and ubuntu 14.04. But it works with ubuntu 16.04.
-
 Everything is looking great. Let's run some software!
+
 
 ## Running fabio
 
