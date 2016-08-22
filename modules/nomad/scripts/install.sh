@@ -15,7 +15,7 @@ sudo mkdir -p /opt/nomad/data
 sudo mkdir -p /etc/nomad.d
 sudo mv /tmp/server.hcl /etc/nomad.d
 
-NOMAD=0.4.1-rc1
+NOMAD=0.4.1
 cd /tmp
 machine_type=arm
 if [[ `uname -m` == "x86_64" ]]; then
