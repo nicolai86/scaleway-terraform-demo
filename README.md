@@ -91,6 +91,8 @@ output "public_ip" {
 }
 ```
 
+> I'm using the official scaleway [scw](github.com/scaleway/scaleway-cli) tool to lookup image ids used in the `scaleway_server` `image` parameter
+
 As you can see above, I'm using the scaleway_ip resource to request a public IP which can outlive the instance it's attached to. This way you can re-create the jump host without loosing the public IP you're using.
 
 We'll be using our jump host module like this:
@@ -214,9 +216,6 @@ consul-2  10.1.17.22:8301   alive   server  0.6.4  2         dc1
 ```
 
 Note that it doesn't matter which server we talk to.
-
->TODO describe how to lookup IMAGE uuid. Right now I'm working around the issue: create a server, describe via API, use image uuid from response. scw images --no-trunc doesn't work for ARM… :?
-Lets continue with setting up our nomad cluster!
 
 #### Setting up nomad
 
