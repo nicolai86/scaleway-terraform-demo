@@ -38,10 +38,6 @@ resource "scaleway_server" "server" {
     agent        = true
   }
 
-  # provisioner "file" {
-  #   source      = "${path.module}/scripts/upstart.conf"
-  #   destination = "/tmp/upstart.conf"
-  # }
   provisioner "file" {
     source      = "${path.module}/scripts/system.service"
     destination = "/tmp/consul.service"

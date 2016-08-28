@@ -29,10 +29,6 @@ resource "scaleway_server" "server" {
   dynamic_ip_required = true
   tags                = ["cluster"]
 
-  # provisioner "file" {
-  #   source      = "${path.module}/scripts/upstart.conf"
-  #   destination = "/tmp/upstart.conf"
-  # }
   provisioner "file" {
     source      = "${path.module}/scripts/system.service"
     destination = "/tmp/nomad.service"
