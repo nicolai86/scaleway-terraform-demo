@@ -18,10 +18,11 @@ machine_type=arm
 if [[ `uname -m` == "x86_64" ]]; then
   machine_type=amd64
 fi
-curl -L -o consul.zip https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_${machine_type}.zip
+# echo https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_${machine_type}.zip
+# curl -L -o consul.zip https://releases.hashicorp.com/consul/${CONSUL}/consul_${CONSUL}_linux_${machine_type}.zip
 
 echo "Installing Consul..."
-unzip consul.zip >/dev/null
+unzip /tmp/consul_${CONSUL}_${machine_type}.zip >/dev/null
 chmod +x consul
 sudo mv consul /usr/local/bin/consul
 sudo mkdir -p /opt/consul/data

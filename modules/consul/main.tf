@@ -50,6 +50,24 @@ resource "scaleway_server" "server" {
     ]
   }
 
+  provisioner "local-exec" {
+    command = "curl -L -o /tmp/consul_0.6.4_amd64.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_amd64.zip"
+  }
+
+  provisioner "local-exec" {
+    command = "curl -L -o /tmp/consul_0.6.4_arm.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_arm.zip"
+  }
+
+  provisioner "file" {
+    source      = "/tmp/consul_0.6.4_amd64.zip"
+    destination = "/tmp/consul_0.6.4_amd64.zip"
+  }
+
+  provisioner "file" {
+    source      = "/tmp/consul_0.6.4_arm.zip"
+    destination = "/tmp/consul_0.6.4_arm.zip"
+  }
+
   provisioner "remote-exec" {
     scripts = [
       "${path.module}/scripts/install.sh",
