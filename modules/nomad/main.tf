@@ -45,8 +45,8 @@ advertise {
   # We need to specify our host's IP because we can't
   # advertise 0.0.0.0 to other nodes in our cluster.
   serf = "${self.private_ip}:4648"
-  rpc = "${self.private_ip}:4647"
-  http= "${self.private_ip}:4646"
+  rpc  = "${self.private_ip}:4647"
+  http = "${self.private_ip}:4646"
 }
 
 server {
