@@ -10,7 +10,7 @@ else
   sudo yum install -y unzip wget
 fi
 
-echo "Installing Nomad..."
+echo "Fetching Nomad..."
 sudo mkdir -p /opt/nomad/data
 sudo mkdir -p /etc/nomad.d
 sudo mv /tmp/server.hcl /etc/nomad.d
@@ -21,8 +21,10 @@ machine_type=arm
 if [[ `uname -m` == "x86_64" ]]; then
   machine_type=amd64
 fi
+echo https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machine_type}.zip
 curl -L -o nomad.zip https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machine_type}.zip
 unzip nomad.zip >/dev/null
+mv linux_arm/nomad nomad
 chmod +x nomad
 sudo mv nomad /usr/local/bin/nomad
 
