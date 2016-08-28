@@ -126,7 +126,7 @@ resource "scaleway_server" "server" {
   name                = "consul-${count.index + 1}"
   image               = "${var.image}"
   type                = "${var.type}"
-  dynamic_ip_required = true
+  dynamic_ip_required = false
 
   tags = ["consul"]
 
@@ -137,6 +137,24 @@ resource "scaleway_server" "server" {
     bastion_host = "${var.bastion_host}"
     bastion_user = "root"
     agent        = true
+  }
+
+  provisioner "local-exec" {
+    command = "curl -L -o /tmp/consul_0.6.4_amd64.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_amd64.zip"
+  }
+
+  provisioner "local-exec" {
+    command = "curl -L -o /tmp/consul_0.6.4_arm.zip https://releases.hashicorp.com/consul/0.6.4/consul_0.6.4_linux_arm.zip"
+  }
+
+  provisioner "file" {
+    source      = "/tmp/consul_0.6.4_amd64.zip"
+    destination = "/tmp/consul_0.6.4_amd64.zip"
+  }
+
+  provisioner "file" {
+    source      = "/tmp/consul_0.6.4_arm.zip"
+    destination = "/tmp/consul_0.6.4_arm.zip"
   }
 
   provisioner "file" {
@@ -160,7 +178,9 @@ resource "scaleway_server" "server" {
 }
 ```
 
-Since I use terraform with remote-exec, I have to request a public IP via `dynamic_ip_required = true`. To accommodate the bundled installation scripts, I packaged the entire setup into one terraform module called `consul`.
+To accommodate the bundled installation scripts, I packaged the entire setup into one terraform module called `consul`.
+
+Since the host is not publicly accessible I have to work around `releases.hashicorp.com` not being accessible. This is easily fixed by downloading the necessary archives first, and then copying them over via scp.
 
 Note that I use the `connection` attribute to instruct terraform to use the jump host I created previously to connect to any consul instance.
 
@@ -208,7 +228,7 @@ Next, let's lookup the private IPs of the consul servers, and query the member l
 $ terraform show | grep private_ip
   private_ip = 10.1.40.120
   private_ip = 10.1.17.22
-$ ssh root@212.47.227.252 'consul members -rpc-addr=10.1.40.120:8400'
+$ ssh root@212.47.227.252 -A 'ssh root@10.1.40.120 consul members -rpc-addr=10.1.40.120:8400'
 Node      Address           Status  Type    Build  Protocol  DC
 consul-1  10.1.40.120:8301  alive   server  0.6.4  2         dc1
 consul-2  10.1.17.22:8301   alive   server  0.6.4  2         dc1
