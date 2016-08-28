@@ -51,7 +51,7 @@ advertise {
 
 server {
   enabled = true
-  bootstrap_expect = ${element(split(",", "1,0"), signum(count.index))}
+  bootstrap_expect = ${var.server_count}
 }
 
 client {
@@ -63,6 +63,14 @@ client {
 
 consul {
   address = "${var.consul_cluster_ip}:8500"
+
+  server_service_name = "nomad"
+  client_service_name = "nomad-client"
+
+  auto_advertise = true
+
+  server_auto_join = true
+  client_auto_join = true
 }
 EOF
 CMD
