@@ -25,8 +25,8 @@ echo https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machin
 curl -L -o nomad.zip https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machine_type}.zip
 unzip nomad.zip >/dev/null
 mv linux_arm/nomad nomad
-chmod +x nomad
-sudo mv nomad /usr/local/bin/nomad
+# sudo mv nomad /usr/local/bin/nomad
+chmod +x /usr/local/bin/nomad
 
 # Read from the file we created
 
