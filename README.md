@@ -225,9 +225,19 @@ $ terraform output -module=jump_host
 Next, let's lookup the private IPs of the consul servers, and query the member list:
 
 ```
-$ terraform show | grep private_ip
-  private_ip = 10.1.40.120
-  private_ip = 10.1.17.22
+$ terraform output -module=nomad
+private_ips = [
+    [
+        10.1.40.120,
+        10.1.17.22
+    ]
+]
+public_ips = [
+    [
+        163.172.163.127,
+        163.172.164.126
+    ]
+]
 $ ssh root@212.47.227.252 -A 'ssh root@10.1.40.120 consul members -rpc-addr=10.1.40.120:8400'
 Node      Address           Status  Type    Build  Protocol  DC
 consul-1  10.1.40.120:8301  alive   server  0.6.4  2         dc1

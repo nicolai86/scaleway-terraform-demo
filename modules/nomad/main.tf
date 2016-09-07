@@ -87,5 +87,9 @@ CMD
 }
 
 output "public_ips" {
-  value = "${join(",", scaleway_server.server.*.public_ip)}"
+  value = "${list(scaleway_server.server.*.public_ip)}"
+}
+
+output "private_ips" {
+  value = "${list(scaleway_server.server.*.private_ip)}"
 }
