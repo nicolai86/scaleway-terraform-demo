@@ -12,7 +12,7 @@ fi
 
 
 echo "Fetching Consul..."
-CONSUL=0.6.4
+CONSUL=0.7.0
 cd /tmp
 machine_type=arm
 if [[ `uname -m` == "x86_64" ]]; then
