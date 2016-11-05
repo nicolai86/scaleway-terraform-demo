@@ -1,13 +1,22 @@
 variable "commercial_type" {
-  default = "C1" # VC1S, C2S
+  default = "C1"
 }
 
-variable "images" {
+variable "architectures" {
   default = {
-    C1   = "eeb73cbf-78a9-4481-9e38-9aaadaf8e0c9"
-    VC1S = "75c28f52-6c64-40fc-bb31-f53ca9d02de9"
-    C2S  = "75c28f52-6c64-40fc-bb31-f53ca9d02de9"
+    C1   = "arm"
+    VC1S = "x86_64"
+    VC1M = "x86_64"
+    VC1L = "x86_64"
+    C2S  = "x86_64"
+    C2M  = "x86_64"
+    C2L  = "x86_64"
   }
+}
+
+data "scaleway_image" "ubuntu" {
+  architecture = "${lookup(var.architectures, var.commercial_type)}"
+  name = "Ubuntu Xenial"
 }
 
 provider "scaleway" {}
@@ -22,7 +31,7 @@ module "jump_host" {
   security_group = "${module.security_group.id}"
 
   type  = "${var.commercial_type}"
-  image = "${lookup(var.images, var.commercial_type)}"
+  image = "${data.scaleway_image.ubuntu.id}"
 }
 
 module "consul" {
@@ -32,7 +41,7 @@ module "consul" {
   bastion_host   = "${module.jump_host.public_ip}"
 
   type  = "${var.commercial_type}"
-  image = "${lookup(var.images, var.commercial_type)}"
+  image = "${data.scaleway_image.ubuntu.id}"
 }
 
 module "nomad" {
@@ -41,5 +50,5 @@ module "nomad" {
   security_group    = "${module.security_group.id}"
 
   type  = "${var.commercial_type}"
-  image = "${lookup(var.images, var.commercial_type)}"
+  image = "${data.scaleway_image.ubuntu.id}"
 }
