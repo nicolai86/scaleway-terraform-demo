@@ -1,7 +1,4 @@
-variable "image" {
-  default     = "eeb73cbf-78a9-4481-9e38-9aaadaf8e0c9"
-  description = "Ubuntu 16.04 ARM; if you change the instance type be sure to adjust this."
-}
+variable "image" {}
 
 variable "security_group" {
   description = "Security Group to place servers in"
