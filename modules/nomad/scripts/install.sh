@@ -15,7 +15,7 @@ sudo mkdir -p /opt/nomad/data
 sudo mkdir -p /etc/nomad.d
 sudo mv /tmp/server.hcl /etc/nomad.d
 
-NOMAD=0.4.1
+NOMAD=0.5.0
 cd /tmp
 machine_type=arm
 if [[ `uname -m` == "x86_64" ]]; then
@@ -24,8 +24,7 @@ fi
 echo https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machine_type}.zip
 curl -L -o nomad.zip https://releases.hashicorp.com/nomad/${NOMAD}/nomad_${NOMAD}_linux_${machine_type}.zip
 unzip nomad.zip >/dev/null
-mv linux_arm/nomad nomad
-# sudo mv nomad /usr/local/bin/nomad
+sudo mv nomad /usr/local/bin/nomad
 chmod +x /usr/local/bin/nomad
 
 # Read from the file we created
